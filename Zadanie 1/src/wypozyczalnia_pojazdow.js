@@ -3,6 +3,8 @@
 var express = require('express');
 var app = module.exports = express()
 var bodyParser = require('body-parser');
+const fs = require('fs').promises;
+const path = require('path');
 
 app.use(bodyParser.json());
 
@@ -169,29 +171,110 @@ module.exports = {
     Wypozyczalnia,
 };
 
-app.post('/samochody', (req, res) => {
-    const { numer, przebieg, liczba_pasazerow, cena_za_dzien } = req.body;
-    const nowySamochod = new Samochod(numer, przebieg, liczba_pasazerow, cena_za_dzien);
-    res.json(nowySamochod);
+app.post('/addsamochod', async (req, res) => {
+    let { numer, przebieg, liczba_pasazerow, cena_za_dzien } = req.body;
+    let nowySamochod = new Samochod(numer, przebieg, liczba_pasazerow, cena_za_dzien);
+    let savePath = `${saveLocation}/samochod_${numer}.json`;
+    try { 
+        await fs.access(savePath, fs.constants.F_OK);
+        res.status(400).json({ error: 'File already exists.' });
+    } catch (fileNotFoundError) {
+        try {
+            const jsonContent = JSON.stringify(nowySamochod, null, 2);
+            await fs.writeFile(savePath, jsonContent);
+            res.json({ message: 'Samochod saved successfully.' });
+        }
+        catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    }
 });
 
-app.get('/samochody', (req, res) => {
-    res.json(listaWszystkichSamochodow);
+async function findSamochodFiles(saveLocation) {
+    try {
+        let files = await fs.readdir(saveLocation);
+        return files.filter((file) => file.startsWith('samochod_') && file.endsWith('.json'));
+    } catch (error) {
+        throw error;
+    }
+}
+
+app.get('/getSamochody', async (req, res) => {
+    try {
+        let samochodFiles = await findSamochodFiles(saveLocation);
+        let samochody = await Promise.all(
+            samochodFiles.map(async (file) => {
+                let filePath = path.join(saveLocation, file);
+                let fileContent = await fs.readFile(filePath, 'utf-8');
+                return JSON.parse(fileContent);
+            })
+        );
+
+        res.json(samochody);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
-app.get('/samochody/:id', (req, res) => {
-    const samochodId = req.params.id;
-    res.json(znalezionySamochod);
+
+app.get('/getSamochod', async (req, res) => {
+    try {
+        let numer = req.query.numer;
+        let filePath = path.join(saveLocation, `samochod_${numer}.json`);
+        await fs.access(filePath, fs.constants.F_OK);
+        let fileContent = await fs.readFile(filePath, 'utf-8');
+        let znalezionySamochod = JSON.parse(fileContent);
+        res.json(znalezionySamochod);
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            res.status(404).json({ error: 'Samochod not found.' });
+        } else {
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    }
 });
 
-app.put('/samochody/:id', (req, res) => {
-    const { numer, przebieg, liczba_pasazerow, cena_za_dzien } = req.body;
-    res.json(zaktualizowanySamochod);
+app.put('/updateSamochod', async (req, res) => {
+    try {
+        let numer = req.query.numer;
+        let { przebieg, liczba_pasazerow, cena_za_dzien } = req.body;
+        let filePath = path.join(saveLocation, `samochod_${numer}.json`);
+        await fs.access(filePath, fs.constants.F_OK);
+        let fileContent = await fs.readFile(filePath, 'utf-8');
+        let existingSamochod = JSON.parse(fileContent);
+        existingSamochod.przebieg = przebieg || existingSamochod.przebieg;
+        existingSamochod.liczba_pasazerow = liczba_pasazerow || existingSamochod.liczba_pasazerow;
+        existingSamochod.cena_za_dzien = cena_za_dzien || existingSamochod.cena_za_dzien;
+        let updatedContent = JSON.stringify(existingSamochod, null, 2);
+        await fs.writeFile(filePath, updatedContent);
+        res.json(existingSamochod);
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            res.status(404).json({ error: 'Samochod not found.' });
+        } else {
+            console.error(error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    }
 });
 
-app.delete('/samochody/:id', (req, res) => {
-    const samochodId = req.params.id;
-    res.json({ message: 'Samochód został usunięty.' });
+app.delete('/removeSamochod', async (req, res) => {
+    try {
+        const numer = req.query.numer;
+        const filePath = path.join(saveLocation, `samochod_${numer}.json`);
+        await fs.access(filePath, fs.constants.F_OK);
+        await fs.unlink(filePath);
+        res.json({ message: 'Samochod został usunięty.' });
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            res.status(404).json({ error: 'Samochod not found.' });
+        } else {
+            console.error(error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    }
 });
 
 app.post('/setSaveLocation', (req, res) => {
