@@ -5,8 +5,10 @@ var app = module.exports = express()
 var bodyParser = require('body-parser');
 const fs = require('fs').promises;
 const path = require('path');
+const { serveSwagger, setupSwagger } = require('./swagger'); // Update with the correct path
 
 app.use(bodyParser.json());
+app.use('/api-docs', serveSwagger, setupSwagger);
 
 let saveLocation = "";
 
@@ -171,6 +173,43 @@ module.exports = {
     Wypozyczalnia,
 };
 
+/**
+ * @swagger
+ * /addSamochod:
+ *   post:
+ *     summary: Add a new samochod
+ *     description: Creates a new samochod with the provided details and saves it as a JSON file.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           example:
+ *             numer: 'ABC123'
+ *             przebieg: 50000
+ *             liczba_pasazerow: 5
+ *             cena_za_dzien: 100
+ *             lista_uszkodzen: ['Scratch on the door', 'Broken headlight']
+ *             lista_wypozyczen: []
+ *     responses:
+ *       200:
+ *         description: Samochod added successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: 'Samochod saved successfully.'
+ *       400:
+ *         description: Bad Request
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: 'File already exists.'
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: 'Internal Server Error'
+ */
 app.post('/addSamochod', async (req, res) => {
     let { numer, przebieg, liczba_pasazerow, cena_za_dzien, lista_uszkodzen, lista_wypozyczen } = req.body;
     let nowySamochod = new Samochod(numer, przebieg, liczba_pasazerow, cena_za_dzien, lista_uszkodzen, lista_wypozyczen);
@@ -200,6 +239,37 @@ async function findSamochodFiles(saveLocation) {
     }
 }
 
+/**
+ * @swagger
+ * /getSamochody:
+ *   get:
+ *     summary: Get all samochody
+ *     description: Retrieves a list of all samochody available in the system.
+ *     responses:
+ *       200:
+ *         description: Samochody retrieved successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               - numer: 'ABC123'
+ *                 przebieg: 50000
+ *                 liczba_pasazerow: 5
+ *                 cena_za_dzien: 100
+ *                 lista_uszkodzen: ['Scratch on the door', 'Broken headlight']
+ *                 lista_wypozyczen: [{...}, {...}]
+ *               - numer: 'XYZ789'
+ *                 przebieg: 30000
+ *                 liczba_pasazerow: 4
+ *                 cena_za_dzien: 80
+ *                 lista_uszkodzen: ['Dented bumper', 'Cracked windshield']
+ *                 lista_wypozyczen: []
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: 'Internal Server Error'
+ */
 app.get('/getSamochody', async (req, res) => {
     try {
         let samochodFiles = await findSamochodFiles(saveLocation);
@@ -218,7 +288,44 @@ app.get('/getSamochody', async (req, res) => {
     }
 });
 
-
+/**
+ * @swagger
+ * /getSamochod:
+ *   get:
+ *     summary: Get a samochod by numer
+ *     description: Retrieves information about a samochod identified by its numer.
+ *     parameters:
+ *       - in: query
+ *         name: numer
+ *         required: true
+ *         description: The numer of the samochod to be retrieved.
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Samochod retrieved successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               numer: 'ABC123'
+ *               przebieg: 50000
+ *               liczba_pasazerow: 5
+ *               cena_za_dzien: 100
+ *               lista_uszkodzen: ['Scratch on the door', 'Broken headlight']
+ *               lista_wypozyczen: [{...}, {...}]
+ *       404:
+ *         description: Not Found
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: 'Samochod not found.'
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: 'Internal Server Error'
+ */
 app.get('/getSamochod', async (req, res) => {
     try {
         let numer = req.query.numer;
@@ -236,6 +343,70 @@ app.get('/getSamochod', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /updateSamochod:
+ *   put:
+ *     summary: Update a samochod
+ *     description: Updates an existing samochod identified by its numer.
+ *     parameters:
+ *       - in: query
+ *         name: numer
+ *         required: true
+ *         description: The numer of the samochod to be updated.
+ *         schema:
+ *           type: string
+ *       - in: body
+ *         name: Samochod Update
+ *         required: true
+ *         description: The updated information for the samochod.
+ *         schema:
+ *           type: object
+ *           properties:
+ *             przebieg:
+ *               type: number
+ *               description: The new value for przebieg.
+ *             liczba_pasazerow:
+ *               type: number
+ *               description: The new value for liczba_pasazerow.
+ *             cena_za_dzien:
+ *               type: number
+ *               description: The new value for cena_za_dzien.
+ *             lista_uszkodzen:
+ *               type: array
+ *               items:
+ *                 type: string
+ *               description: The updated list of uszkodzenia.
+ *             lista_wypozyczen:
+ *               type: array
+ *               items:
+ *                 type: object
+ *               description: The updated list of wypozyczenia.
+ *     responses:
+ *       200:
+ *         description: Samochod updated successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               numer: 'ABC123'
+ *               przebieg: 50000
+ *               liczba_pasazerow: 5
+ *               cena_za_dzien: 100
+ *               lista_uszkodzen: ['Scratch on the door', 'Broken headlight']
+ *               lista_wypozyczen: [{...}, {...}]
+ *       404:
+ *         description: Not Found
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: 'Samochod not found.'
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: 'Internal Server Error'
+ */
 app.put('/updateSamochod', async (req, res) => {
     try {
         let numer = req.query.numer;
@@ -262,6 +433,39 @@ app.put('/updateSamochod', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /removeSamochod:
+ *   delete:
+ *     summary: Remove a samochod
+ *     description: Deletes a samochod file identified by its numer.
+ *     parameters:
+ *       - in: query
+ *         name: numer
+ *         required: true
+ *         description: The numer of the samochod to be removed.
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Samochod removed successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: 'Samochod został usunięty.'
+ *       404:
+ *         description: Not Found
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: 'Samochod not found.'
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: 'Internal Server Error'
+ */
 app.delete('/removeSamochod', async (req, res) => {
     try {
         const numer = req.query.numer;
@@ -279,6 +483,53 @@ app.delete('/removeSamochod', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /addWypozyczalnia:
+ *   post:
+ *     summary: Add a new wypozyczalnia
+ *     description: Creates a new wypozyczalnia with the provided list of samochod names.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               lista_samochodow:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *             required:
+ *               - lista_samochodow
+ *     responses:
+ *       200:
+ *         description: Wypozyczalnia added successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: 'Wypozyczalnia added successfully.'
+ *       400:
+ *         description: Bad Request
+ *         content:
+ *           application/json:
+ *             examples:
+ *               InvalidInput:
+ *                 value:
+ *                   error: 'Invalid input. lista_samochodow must be an array.'
+ *               InvalidEntries:
+ *                 value:
+ *                   error: 'Invalid entries: ABC123, CPP7312'
+ *               FileExists:
+ *                 value:
+ *                   error: 'File already exists.'
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: 'Internal Server Error'
+ */
 app.post('/addWypozyczalnia', async (req, res) => {
     try {
         const { lista_samochodow } = req.body;
@@ -330,6 +581,41 @@ app.post('/addWypozyczalnia', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /getWypozyczalnia:
+ *   get:
+ *     summary: Get wypozyczalnia information
+ *     description: Retrieves information about the car rental service, including details of each samochod.
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *         content:
+ *           application/json:
+ *             example:
+ *               wypozyczalniaData:
+ *                 lista_samochodow:
+ *                   - samochod1
+ *                   - samochod2
+ *               samochodyData:
+ *                 - nazwa: samochod1
+ *                   content: { samochod1 details }
+ *                 - nazwa: samochod2
+ *                   content: { samochod2 details }
+ *       404:
+ *         description: Not found
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: 'Wypozyczalnia not found.'
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: 'Internal Server Error'
+ *
+ */
 app.get('/getWypozyczalnia', async (req, res) => {
     try {
         const wypozyczalniaPath = path.join(saveLocation, 'wypozyczalnia.json');
@@ -363,6 +649,45 @@ app.get('/getWypozyczalnia', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /updateWypozyczalnia:
+ *   put:
+ *     summary: Update the wypozyczalnia
+ *     description: Updates the list of samochody in the wypozyczalnia.json file.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               lista_samochodow:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *             required:
+ *               - lista_samochodow
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: 'Wypozyczalnia updated successfully.'
+ *       400:
+ *         description: Bad request
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: 'Invalid input. lista_samochodow must be an array.'
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: 'Internal Server Error'
+ */
 app.put('/updateWypozyczalnia', async (req, res) => {
     try {
         const wypozyczalniaFilePath = path.join(saveLocation, 'wypozyczalnia.json');
@@ -403,6 +728,32 @@ app.put('/updateWypozyczalnia', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /removeWypozyczalnia:
+ *   delete:
+ *     summary: Remove the wypozyczalnia
+ *     description: Deletes the wypozyczalnia.json file, removing all information about the car rental service.
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: 'Wypozyczalnia removed successfully.'
+ *       404:
+ *         description: Not found
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: 'Wypozyczalnia not found.'
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: 'Internal Server Error'
+ */
 app.delete('/removeWypozyczalnia', async (req, res) => {
     try {
         const wypozyczalniaPath = path.join(saveLocation, 'wypozyczalnia.json');
@@ -418,6 +769,37 @@ app.delete('/removeWypozyczalnia', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /setSaveLocation:
+ *   post:
+ *     summary: Set the save location
+ *     description: Updates the save location used by the application.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               location:
+ *                 type: string
+ *             required:
+ *               - location
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: 'Save location set successfully.'
+ *       400:
+ *         description: Bad request
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: 'Location not provided.'
+ */
 app.post('/setSaveLocation', (req, res) => {
     const { location } = req.body;
 
@@ -429,10 +811,38 @@ app.post('/setSaveLocation', (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /getSaveLocation:
+ *   get:
+ *     summary: Get the save location
+ *     description: Returns the current save location used by the application.
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *         content:
+ *           application/json:
+ *             example:
+ *               saveLocation: '/path/to/your/save/location'
+ */
 app.get('/getSaveLocation', (req, res) => {
     res.json({ saveLocation });
 });
 
+/**
+ * @swagger
+ * /:
+ *   get:
+ *     summary: Get a greeting
+ *     description: Returns a simple "Hello World" message.
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *         content:
+ *           text/plain:
+ *             example:
+ *               Hello World
+ */
 app.get('/', function (req, res) {
     res.send('Hello World');
  })

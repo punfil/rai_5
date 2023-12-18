@@ -13,7 +13,9 @@
   "dependencies": {
     "chai": "^4.3.10",
     "mocha": "^10.2.0",
-    "promises": "^0.2.5"
+    "promises": "^0.2.5",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.0"
   },
   "description": "",
   "devDependencies": {
