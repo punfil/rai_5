@@ -10,55 +10,55 @@ describe('wypozyczalnia-tests', function()
 		/* Index, przebieg, liczba_osob, cena/24h */
         /* 5 - najczesciej uszkadzany, 4 mniej, 3 mniej, 2 mniej, 1 wcale */
         /* 1 - najczesciej wypozyczany, 2 mniej, 3 mniej, 4 mniej, 5 wcale */
-		samochod_1 = new Samochod(1, 10222, 4, 500);
+		samochod_1 = new Samochod(1, 10222, 4, 500, [], []);
         samochod_1.wypozycz("Andrzej Kowalski", new Date(2022, 0, 27), new Date(2022, 0, 29));
 		samochod_1.wypozycz("Patryk Myslewski", new Date (2022, 0, 31), new Date(2022, 1, 2));
         samochod_1.wypozycz("Maryla Kowalska", new Date(2022, 1, 4), new Date(2022, 1, 5));
 		samochod_1.wypozycz("Patryk Myslewski", new Date (2022, 1, 10), new Date(2022, 1, 30));
 
-        samochod_2 = new Samochod(2, 10500, 2, 600);
+        samochod_2 = new Samochod(2, 10500, 2, 600, [], []);
         samochod_2.wypozycz("Andrzej Kowalski", new Date(2022, 0, 27), new Date(2022, 0, 29));
 		samochod_2.wypozycz("Patryk Myslewski", new Date (2022, 0, 31), new Date(2022, 1, 2));
         samochod_2.wypozycz("Maryla Kowalska", new Date(2022, 1, 4), new Date(2022, 1, 5));
         samochod_2.dodaj_uszkodzenie("Zderzak");
 
-        samochod_3 = new Samochod(3, 102221, 4, 700);
+        samochod_3 = new Samochod(3, 102221, 4, 700, [], []);
         samochod_3.wypozycz("Andrzej Kowalski", new Date(2022, 0, 27), new Date(2022, 0, 29));
 		samochod_3.wypozycz("Patryk Myslewski", new Date (2022, 0, 31), new Date(2022, 1, 2));
         samochod_3.dodaj_uszkodzenie("Zderzak");
         samochod_3.dodaj_uszkodzenie("Zderzak");
 
-        samochod_4 = new Samochod(4, 102220, 4, 800);
+        samochod_4 = new Samochod(4, 102220, 4, 800, [], []);
         samochod_4.wypozycz("Andrzej Kowalski", new Date(2022, 0, 27), new Date(2022, 0, 29));
         samochod_4.dodaj_uszkodzenie("Zderzak");
         samochod_4.dodaj_uszkodzenie("Zderzak");
         samochod_4.dodaj_uszkodzenie("Zderzak");
 
-        samochod_5 = new Samochod(5, 102220, 4, 800);
+        samochod_5 = new Samochod(5, 102220, 4, 800, [], []);
         samochod_5.dodaj_uszkodzenie("Zderzak");
         samochod_5.dodaj_uszkodzenie("Zderzak");
         samochod_5.dodaj_uszkodzenie("Zderzak");
         samochod_5.dodaj_uszkodzenie("Zderzak");
 
-        samochod_6 = new Samochod(6, 102220, 4, 800);
+        samochod_6 = new Samochod(6, 102220, 4, 800, [], []);
         samochod_6.wypozycz("Andrzej Kowalski", new Date(2022, 0, 27), new Date(2022, 0, 29));
 		samochod_6.wypozycz("Patryk Myslewski", new Date (2022, 0, 31), new Date(2022, 1, 2));
         samochod_6.wypozycz("Maryla Kowalska", new Date(2022, 1, 4), new Date(2022, 1, 5));
         samochod_6.dodaj_uszkodzenie("Zderzak");
         
-        samochod_7 = new Samochod(7, 102220, 4, 800);
+        samochod_7 = new Samochod(7, 102220, 4, 800, [], []);
         samochod_7.wypozycz("Andrzej Kowalski", new Date(2022, 0, 27), new Date(2022, 0, 29));
 		samochod_7.wypozycz("Patryk Myslewski", new Date (2022, 0, 31), new Date(2022, 1, 2));
         samochod_7.dodaj_uszkodzenie("Zderzak");
         samochod_7.dodaj_uszkodzenie("Zderzak");
 
-        samochod_8 = new Samochod(8, 102220, 4, 800);
+        samochod_8 = new Samochod(8, 102220, 4, 800, [], []);
         samochod_8.wypozycz("Andrzej Kowalski", new Date(2022, 0, 27), new Date(2022, 0, 29));
         samochod_8.dodaj_uszkodzenie("Zderzak");
         samochod_8.dodaj_uszkodzenie("Zderzak");
         samochod_8.dodaj_uszkodzenie("Zderzak");
 
-        samochod_9 = new Samochod(9, 102220, 4, 800);
+        samochod_9 = new Samochod(9, 102220, 4, 800, [], []);
         samochod_9.wypozycz("Andrzej Kowalski", new Date(2022, 0, 27), new Date(2022, 0, 29));
 		samochod_9.wypozycz("Patryk Myslewski", new Date (2022, 0, 31), new Date(2022, 1, 2));
         samochod_9.dodaj_uszkodzenie("Zderzak");
@@ -66,19 +66,19 @@ describe('wypozyczalnia-tests', function()
         samochod_9.dodaj_uszkodzenie("Zderzak");
         samochod_9.dodaj_uszkodzenie("Zderzak");
 
-        samochod_10 = new Samochod(10, 102220, 4, 800);
+        samochod_10 = new Samochod(10, 102220, 4, 800, [], []);
         samochod_10.dodaj_uszkodzenie("Zderzak");
         samochod_10.wypozycz("Andrzej Kowalski", new Date(2022, 0, 27), new Date(2022, 0, 29));
 		samochod_10.wypozycz("Patryk Myslewski", new Date (2022, 0, 31), new Date(2022, 1, 2));
         samochod_10.wypozycz("Maryla Kowalska", new Date(2022, 1, 4), new Date(2022, 1, 5));
 
-        samochod_11 = new Samochod(11, 102220, 4, 800);
+        samochod_11 = new Samochod(11, 102220, 4, 800, [], []);
         samochod_11.wypozycz("Andrzej Kowalski", new Date(2022, 0, 27), new Date(2022, 0, 29));
 		samochod_11.wypozycz("Patryk Myslewski", new Date (2022, 0, 31), new Date(2022, 1, 2));
         samochod_11.dodaj_uszkodzenie("Zderzak");
         samochod_11.dodaj_uszkodzenie("Zderzak");
 
-        wypozyczalnia = new Wypozyczalnia();
+        wypozyczalnia = new Wypozyczalnia([]);
 	});
 
     it('Nie dodawaj samochodow i sprawdz liczbe wypozyczonych aut', function() 

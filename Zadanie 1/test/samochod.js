@@ -7,7 +7,7 @@ describe('samochod-tests', function()
 	
 	beforeEach(function(){
 		/* Index, przebieg, liczba_osob, cena/24h */
-		samochod_obj = new Samochod(0, 10222, 4, 500);
+		samochod_obj = new Samochod(0, 10222, 4, 500, [], []);
 	});
 
 	it('Wypozycz dwa razy samochod i sprawdz dostepnosc', function() 
