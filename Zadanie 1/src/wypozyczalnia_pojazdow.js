@@ -1,5 +1,13 @@
 "use strict";
 
+var express = require('express');
+var app = module.exports = express()
+var bodyParser = require('body-parser');
+
+app.use(bodyParser.json());
+
+let saveLocation = "";
+
 function KwitWypozyczenie(imie_nazwisko_wypozyczajacego, data_wypozyczenia, data_zwrotu) {
     this.imie_nazwisko_wypozyczajacego = imie_nazwisko_wypozyczajacego;
     this.data_wypozyczenia = data_wypozyczenia;
@@ -160,3 +168,52 @@ module.exports = {
     Samochod,
     Wypozyczalnia,
 };
+
+app.post('/samochody', (req, res) => {
+    const { numer, przebieg, liczba_pasazerow, cena_za_dzien } = req.body;
+    const nowySamochod = new Samochod(numer, przebieg, liczba_pasazerow, cena_za_dzien);
+    res.json(nowySamochod);
+});
+
+app.get('/samochody', (req, res) => {
+    res.json(listaWszystkichSamochodow);
+});
+
+app.get('/samochody/:id', (req, res) => {
+    const samochodId = req.params.id;
+    res.json(znalezionySamochod);
+});
+
+app.put('/samochody/:id', (req, res) => {
+    const { numer, przebieg, liczba_pasazerow, cena_za_dzien } = req.body;
+    res.json(zaktualizowanySamochod);
+});
+
+app.delete('/samochody/:id', (req, res) => {
+    const samochodId = req.params.id;
+    res.json({ message: 'Samochód został usunięty.' });
+});
+
+app.post('/setSaveLocation', (req, res) => {
+    const { location } = req.body;
+
+    if (location) {
+        saveLocation = location;
+        res.json({ message: 'Save location set successfully.' });
+    } else {
+        res.status(400).json({ error: 'Location not provided.' });
+    }
+});
+
+app.get('/getSaveLocation', (req, res) => {
+    res.json({ saveLocation });
+});
+
+app.get('/', function (req, res) {
+    res.send('Hello World');
+ })
+
+if (!module.parent) {
+    app.listen(3000);
+    console.log('Express started on port 3000');
+}
