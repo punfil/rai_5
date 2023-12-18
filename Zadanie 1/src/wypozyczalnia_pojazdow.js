@@ -16,13 +16,13 @@ function KwitWypozyczenie(imie_nazwisko_wypozyczajacego, data_wypozyczenia, data
     this.data_zwrotu = data_zwrotu;
 }
 
-function Samochod(numer, przebieg, liczba_pasazerow, cena_za_dzien) {
+function Samochod(numer, przebieg, liczba_pasazerow, cena_za_dzien, lista_uszkodzen, lista_wypozyczen) {
     this.numer = numer;
     this.przebieg = przebieg;
     this.liczba_pasazerow = liczba_pasazerow;
     this.cena_za_dzien = cena_za_dzien;
-    this.lista_uszkodzen = []
-    this.lista_wypozyczen = [];
+    this.lista_uszkodzen = lista_uszkodzen;
+    this.lista_wypozyczen = lista_wypozyczen;
 
     this.wypozycz = function(imie_nazwisko_wypozyczajacego, data_wypozyczenia, data_planowanego_zwrotu) {
         this.lista_wypozyczen.push(new KwitWypozyczenie(imie_nazwisko_wypozyczajacego, data_wypozyczenia, data_planowanego_zwrotu));
@@ -72,8 +72,8 @@ function Samochod(numer, przebieg, liczba_pasazerow, cena_za_dzien) {
     }
 }
 
-function Wypozyczalnia() {
-    this.lista_samochodow = []
+function Wypozyczalnia(lista_samochodow) {
+    this.lista_samochodow = lista_samochodow;
 
     this.dodaj_samochod = function(samochod) {
         this.lista_samochodow.push(samochod);
@@ -171,9 +171,9 @@ module.exports = {
     Wypozyczalnia,
 };
 
-app.post('/addsamochod', async (req, res) => {
-    let { numer, przebieg, liczba_pasazerow, cena_za_dzien } = req.body;
-    let nowySamochod = new Samochod(numer, przebieg, liczba_pasazerow, cena_za_dzien);
+app.post('/addSamochod', async (req, res) => {
+    let { numer, przebieg, liczba_pasazerow, cena_za_dzien, lista_uszkodzen, lista_wypozyczen } = req.body;
+    let nowySamochod = new Samochod(numer, przebieg, liczba_pasazerow, cena_za_dzien, lista_uszkodzen, lista_wypozyczen);
     let savePath = `${saveLocation}/samochod_${numer}.json`;
     try { 
         await fs.access(savePath, fs.constants.F_OK);
@@ -239,7 +239,7 @@ app.get('/getSamochod', async (req, res) => {
 app.put('/updateSamochod', async (req, res) => {
     try {
         let numer = req.query.numer;
-        let { przebieg, liczba_pasazerow, cena_za_dzien } = req.body;
+        let { przebieg, liczba_pasazerow, cena_za_dzien, lista_uszkodzen, lista_wypozyczen } = req.body;
         let filePath = path.join(saveLocation, `samochod_${numer}.json`);
         await fs.access(filePath, fs.constants.F_OK);
         let fileContent = await fs.readFile(filePath, 'utf-8');
@@ -247,6 +247,8 @@ app.put('/updateSamochod', async (req, res) => {
         existingSamochod.przebieg = przebieg || existingSamochod.przebieg;
         existingSamochod.liczba_pasazerow = liczba_pasazerow || existingSamochod.liczba_pasazerow;
         existingSamochod.cena_za_dzien = cena_za_dzien || existingSamochod.cena_za_dzien;
+        existingSamochod.lista_uszkodzen = lista_uszkodzen || existingSamochod.lista_uszkodzen;
+        existingSamochod.lista_wypozyczen = lista_wypozyczen || existingSamochod.lista_wypozyczen;
         let updatedContent = JSON.stringify(existingSamochod, null, 2);
         await fs.writeFile(filePath, updatedContent);
         res.json(existingSamochod);
@@ -270,6 +272,145 @@ app.delete('/removeSamochod', async (req, res) => {
     } catch (error) {
         if (error.code === 'ENOENT') {
             res.status(404).json({ error: 'Samochod not found.' });
+        } else {
+            console.error(error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    }
+});
+
+app.post('/addWypozyczalnia', async (req, res) => {
+    try {
+        const { lista_samochodow } = req.body;
+        if (!Array.isArray(lista_samochodow)) {
+            res.status(400).json({ error: 'Invalid input. lista_samochodow must be an array.' });
+            return;
+        }
+        const savePath = path.join(saveLocation, "wypozyczalnia.json")
+
+        try {
+            await fs.access(savePath, fs.constants.F_OK);
+            res.status(400).json({ error: 'File already exists.' });
+        } catch (fileNotFoundError) {
+            try {
+                const verificationResults = await Promise.all(
+                    lista_samochodow.map(async (nazwa) => {
+                        const samochodFilePath = path.join(saveLocation, `samochod_${nazwa}.json`);
+                        try {
+                            await fs.access(samochodFilePath, fs.constants.F_OK);
+                            return { nazwa, isValid: true };
+                        } catch (error) {
+                            if (error.code === 'ENOENT') {
+                                return { nazwa, isValid: false };
+                            } else {
+                                throw error;
+                            }
+                        }
+                    })
+                );
+
+                const allEntriesValid = verificationResults.every((result) => result.isValid);
+
+                if (allEntriesValid) {
+                    const wypozyczalniaPath = path.join(saveLocation, 'wypozyczalnia.json');
+                    await fs.writeFile(wypozyczalniaPath, JSON.stringify({ lista_samochodow }, null, 2));
+                    res.json({ message: 'Wypozyczalnia added successfully.' });
+                } else {
+                    const invalidEntries = verificationResults.filter((result) => !result.isValid).map((result) => result.nazwa);
+                    res.status(400).json({ error: `Invalid entries: ${invalidEntries.join(', ')}` });
+                }
+            } catch (error) {
+                console.error(error);
+                res.status(500).json({ error: 'Internal Server Error' });
+            }
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.get('/getWypozyczalnia', async (req, res) => {
+    try {
+        const wypozyczalniaPath = path.join(saveLocation, 'wypozyczalnia.json');
+        const wypozyczalniaContent = await fs.readFile(wypozyczalniaPath, 'utf-8');
+        const wypozyczalniaData = JSON.parse(wypozyczalniaContent);
+        const listaSamochodow = wypozyczalniaData.lista_samochodow;
+        const samochodyData = await Promise.all(
+            listaSamochodow.map(async (nazwa) => {
+                const samochodFilePath = path.join(saveLocation, `samochod_${nazwa}.json`);
+                try {
+                    const samochodContent = await fs.readFile(samochodFilePath, 'utf-8');
+                    return { nazwa, content: JSON.parse(samochodContent) };
+                } catch (error) {
+                    if (error.code === 'ENOENT') {
+                        return { nazwa, error: 'Samochod not found.' };
+                    } else {
+                        throw error;
+                    }
+                }
+            })
+        );
+
+        res.json({ wypozyczalniaData, samochodyData });
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            res.status(404).json({ error: 'Wypozyczalnia not found.' });
+        } else {
+            console.error(error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    }
+});
+
+app.put('/updateWypozyczalnia', async (req, res) => {
+    try {
+        const wypozyczalniaFilePath = path.join(saveLocation, 'wypozyczalnia.json');
+        const { lista_samochodow } = req.body;
+        if (!Array.isArray(lista_samochodow)) {
+            res.status(400).json({ error: 'Invalid input. lista_samochodow must be an array.' });
+            return;
+        }
+
+        const verificationResults = await Promise.all(
+            lista_samochodow.map(async (nazwa) => {
+                const samochodFilePath = path.join(saveLocation, `samochod_${nazwa}.json`);
+                try {
+                    await fs.access(samochodFilePath, fs.constants.F_OK);
+                    return { nazwa, isValid: true };
+                } catch (error) {
+                    if (error.code === 'ENOENT') {
+                        return { nazwa, isValid: false };
+                    } else {
+                        throw error;
+                    }
+                }
+            })
+        );
+
+        const allEntriesValid = verificationResults.every((result) => result.isValid);
+
+        if (allEntriesValid) {
+            await fs.writeFile(wypozyczalniaFilePath, JSON.stringify({ lista_samochodow }, null, 2));
+            res.json({ message: 'Wypozyczalnia updated successfully.' });
+        } else {
+            const invalidEntries = verificationResults.filter((result) => !result.isValid).map((result) => result.nazwa);
+            res.status(400).json({ error: `Invalid entries: ${invalidEntries.join(', ')}` });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.delete('/removeWypozyczalnia', async (req, res) => {
+    try {
+        const wypozyczalniaPath = path.join(saveLocation, 'wypozyczalnia.json');
+        await fs.unlink(wypozyczalniaPath);
+        res.json({ message: 'Wypozyczalnia removed successfully.' });
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            res.status(404).json({ error: 'Wypozyczalnia not found.' });
         } else {
             console.error(error);
             res.status(500).json({ error: 'Internal Server Error' });
